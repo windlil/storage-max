@@ -28,17 +28,16 @@ class MaxStorage extends AbstractStrongStorage {
     value: T
     expire?: number
     interceptor?: Interceptor
-    noUseNameSpace?: boolean
   }, value?: T, expire?: number) {
     let uniKey: string
     if (typeof keyOrObject === 'object') {
-      if (typeof keyOrObject?.interceptor === 'function' && !keyOrObject?.noUseNameSpace) {
+      if (typeof keyOrObject?.interceptor === 'function') {
         const { namespace: manualNameSpace } = keyOrObject.interceptor({
           namespace: this.namespace
         })
         uniKey = this.getUniKey(keyOrObject?.key, manualNameSpace)
       } else {
-        uniKey = keyOrObject?.noUseNameSpace ? keyOrObject.key: this.getUniKey(keyOrObject?.key)
+        uniKey = this.getUniKey(keyOrObject?.key)
       }
     } else {
       uniKey = this.getUniKey(keyOrObject)
@@ -46,7 +45,7 @@ class MaxStorage extends AbstractStrongStorage {
 
     let _item = {
       value,
-      expire
+      expire: expire ? (new Date().getTime() + expire) : undefined
     }
     
     this.storage.setItem(uniKey, JSON.stringify(_item))
@@ -58,25 +57,30 @@ class MaxStorage extends AbstractStrongStorage {
     }
   }
   
-  getItem<T>(key: string): T | null {
+  getItem<T>(key: string, justReturn = false): T | null {
     const data = this.storage.getItem(this.getUniKey(key))
+    if (justReturn) return data as any
     if (data) {
       const item: {
         value: T
-        expire: number
+        expire?: number
       } = JSON.parse(data)
 
-      if (new Date().getTime() < item.expire) {
-        return item.value
+      if (item?.expire) {
+        if (new Date().getTime() < item.expire) {
+          return item.value
+        } else {
+          this.removeItem(key)
+        }
       } else {
-        this.removeItem(key)
+        return item.value
       }
     }
     return null
   }
 
   removeItem(key: string) {
-    const item = this.getItem(key)
+    const item = this.getItem(key, true)
     let result: boolean
 
     if (item) {
@@ -138,9 +142,5 @@ class MaxStorage extends AbstractStrongStorage {
     })
   }
 }
-
-const maxLocalStorage = new MaxStorage(localStorage)
-maxLocalStorage.getItems([''], {})
-const [a, b] = maxLocalStorage.getItems<[string, number]>([''], [])
 
 export default MaxStorage
