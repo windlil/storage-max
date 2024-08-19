@@ -1,3 +1,4 @@
+
 abstract class AbstractStrongStorage {
   protected storage: Storage
 
@@ -15,8 +16,22 @@ type Interceptor = (item: {
 }
 
 class MaxStorage extends AbstractStrongStorage {
+  protected UNI_KEYS_SET: Set<string>
+
   constructor(storage: Storage, private namespace = '_MAXSTORAGE_') {
     super(storage)
+    this.initUniKeysSet()
+  }
+
+  private initUniKeysSet() {
+    const list = this.getItem<Set<string> | null>('UNI_KEYS_SET')
+
+    if (list) {
+      this.UNI_KEYS_SET = list
+    } else {
+      this.UNI_KEYS_SET = new Set()
+      this.setItem('UNI_KEYS_SET', this.UNI_KEYS_SET)
+    }
   }
 
   private getUniKey(key: string, manualNameSpace?: string) {
@@ -43,6 +58,8 @@ class MaxStorage extends AbstractStrongStorage {
       uniKey = this.getUniKey(keyOrObject)
     }
 
+    this.UNI_KEYS_SET.add(uniKey)
+
     let _item = {
       value,
       expire: expire ? (new Date().getTime() + expire) : undefined
@@ -58,7 +75,8 @@ class MaxStorage extends AbstractStrongStorage {
   }
   
   getItem<T>(key: string, justReturn = false): T | null {
-    const data = this.storage.getItem(this.getUniKey(key))
+    const uniKey = this.getUniKey(key)
+    const data = this.storage.getItem(uniKey)
     if (justReturn) return data as any
     if (data) {
       const item: {
@@ -70,6 +88,7 @@ class MaxStorage extends AbstractStrongStorage {
         if (new Date().getTime() < item.expire) {
           return item.value
         } else {
+          this.UNI_KEYS_SET.delete(uniKey)
           this.removeItem(key)
         }
       } else {
