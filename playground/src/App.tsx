@@ -1,34 +1,58 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useCallback, useEffect, useState } from "react"
+import { _localStorage } from "./storage"
 
-function App() {
-  const [count, setCount] = useState(0)
+const mockListData = [
+  {
+    name: 'jack',
+    age: '22',
+  },
+  {
+    name: 'mike',
+    age: '30',
+  },
+]
+
+const App = () => {
+  const [list, setList] = useState<any>([])
+
+  const getStorageData = useCallback(() => {
+    let listData = _localStorage.getItem('LIST')
+    if (!listData) {
+      _localStorage.setItem<Array<{name: string, age: string}>>({
+        key: 'LIST',
+        value: mockListData,
+        callback: ({value}) => {
+          listData = value
+        },
+      })
+    }
+    setList(listData)
+  }, [])
+
+  const removeList = useCallback(() => {
+    _localStorage.removeItem({
+      key: 'LIST',
+      callback() {
+        setList([])
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    getStorageData()
+  }, [])
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="font-mono text-zinc-100 p-6">
+      <ul>
+        {list?.length ? list.map((item: any, index: number) => (
+          <li key={index}>
+            <span>name:{item.name} - age:{item.age}</span>
+          </li>
+        )) : <p>No Data</p>}
+      </ul>
+      <button onClick={removeList} className="bg-white p-2 text-black rounded-md hover:bg-zinc-100">remove list</button>
+    </div>
   )
 }
 

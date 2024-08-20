@@ -1,11 +1,11 @@
-export const setStorageItem = (key: string, value: any, expire?: number) => {
+export const setItem = (key: string, value: any, expire?: number) => {
   localStorage.setItem(key, JSON.stringify({
     value,
     expire: expire ? (new Date().getTime() + expire) : undefined
   }))
 }
 
-export const getStorageItem = <T>(key: string, justReturn = false): T | null => {
+export const getItem = <T>(key: string, justReturn = false): T | null => {
   const jsonItem = localStorage.getItem(key)
   if (justReturn) return jsonItem as any
   if (jsonItem) {
@@ -17,7 +17,7 @@ export const getStorageItem = <T>(key: string, justReturn = false): T | null => 
       if (new Date().getTime() < item.expire) {
         return item.value
       } else {
-        removeStorageItem(key)
+        removeItem(key)
       }
     } else {
       return item.value
@@ -26,13 +26,13 @@ export const getStorageItem = <T>(key: string, justReturn = false): T | null => 
   return null
 }
 
-export const removeStorageItem = (key: string) => {
-  const item = getStorageItem(key, true)
+export const removeItem = (key: string) => {
+  const item = getItem(key, true)
   if (item) {
     localStorage.removeItem(key)
   }
 }
 
-export const clearStorage = () => {
+export const clear = () => {
   localStorage.clear()
 }
